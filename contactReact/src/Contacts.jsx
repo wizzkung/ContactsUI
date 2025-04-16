@@ -5,10 +5,28 @@ const Contacts = () => {
   const [contacts, setContacts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false); //Храним состояние открытия моадльного окна
   const [form] = Form.useForm(); // Для упралвения ввода данными внутри модального окна
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  }); //Добавил отдельную серверную пагинацию
 
   useEffect(() => {
     fetchContacts();
   }, []);
+
+  const fetchPagination = async (page = 1, size = 10) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5163/api/Contact/paged/${page}/${size}`
+      );
+      const data = await res.json();
+      setContacts(data.data);
+      setPagination({ current: page, pageSize: size, total: data.total });
+    } catch (err) {
+      console.error("Ошибка загрузки:", err);
+    }
+  };
 
   const fetchContacts = async () => {
     try {
@@ -103,12 +121,25 @@ const Contacts = () => {
       >
         Add Contact
       </Button>
+      <h1>Пагинация серверная</h1>
       <Table
         dataSource={contacts}
         columns={columns}
         rowKey="id"
-        loading={!contacts.length}
+        pagination={{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          onChange: (page, pageSize) => fetchPagination(page, pageSize),
+        }}
       />
+      {/* 
+      <Table
+        dataSource={contacts}
+        columns={columns}   обычный getAll
+        rowKey="id"
+        loading={!contacts.length}
+      /> */}
       <Modal
         title={form.getFieldValue("id") ? "Edit Contact" : "Add Contact"}
         open={isModalOpen}
